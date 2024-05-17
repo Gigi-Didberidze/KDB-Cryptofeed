@@ -17,6 +17,7 @@ quote:([]
 	bestBidSize: `float$();
 	bestAsk: `float$();
 	bestAskSize: `float$();
+	midprice: `float$();
 	bidAskSpread: `float$();
 	marketDepthBids: `float$();
 	marketDepthAsks: `float$();
