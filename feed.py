@@ -40,8 +40,8 @@ class DataHandler:
             format(t.timestamp),
             t.exchange,
             t.side,
-            format(t.amount, '.4f'),
-            format(t.price, '.4f')
+            format(t.amount, '.4g'),
+            format(t.price, '.4g')
         )
         self.trades.append(trade_tuple)
         
@@ -133,8 +133,8 @@ class DataHandler:
         ask_slippage_price = self.calculate_price_with_slippage(filtered_asks, self.order_size)
 
         # Handle edge cases where slippage price might be None
-        bid_slippage_price_str = format(bid_slippage_price, '.4f') if bid_slippage_price else '0.0000'
-        ask_slippage_price_str = format(ask_slippage_price, '.4f') if ask_slippage_price else '0.0000'
+        bid_slippage_price_str = format(bid_slippage_price, '.4g') if bid_slippage_price else '0.0000'
+        ask_slippage_price_str = format(ask_slippage_price, '.4g') if ask_slippage_price else '0.0000'
 
         # Prepare a book tuple for the batch
         book_tuple = (
@@ -142,17 +142,17 @@ class DataHandler:
             book.symbol,
             format(book.timestamp),
             book.exchange,
-            format(best_bid_price, '.4f'),
-            format(best_bid_volume, '.4f'),
-            format(best_ask_price, '.4f'),
-            format(best_ask_volume, '.4f'),
-            format(midprice, '.4f'),
-            format(bid_ask_spread, '.4f'),
-            format(market_depth_bids, '.4f'),
-            format(market_depth_asks, '.4f'),
-            format(order_book_imbalance, '.4f'),
-            format(vwap, '.4f'),
-            format(order_book_ratio, '.4f') if order_book_ratio is not None else 'None',
+            format(best_bid_price, '.4g'),
+            format(best_bid_volume, '.4g'),
+            format(best_ask_price, '.4g'),
+            format(best_ask_volume, '.4g'),
+            format(midprice, '.4g'),
+            format(bid_ask_spread, '.4g'),
+            format(market_depth_bids, '.4g'),
+            format(market_depth_asks, '.4g'),
+            format(order_book_imbalance, '.4g'),
+            format(vwap, '.4g'),
+            format(order_book_ratio, '.4g') if order_book_ratio is not None else 'None',
             bid_slippage_price_str,
             ask_slippage_price_str
         )

@@ -45,6 +45,10 @@ nohup ../q/l64/q tick/r.q localhost:5000 localhost:5002 -p 5001 </dev/null >logR
 ```bash
 python feed.py
 ```
+### Run in background:
+```bash
+nohup python feed.py </dev/null >main_output.txt 2>&1 &
+```
 
 
 
