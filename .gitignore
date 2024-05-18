@@ -6,3 +6,6 @@ crypto_feed.log
 
 # Ignore all files starting with sym2024
 sym2024*
+
+# Ignore env
+myenv*

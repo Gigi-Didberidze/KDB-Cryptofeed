@@ -61,8 +61,10 @@ class DataHandler:
             symbols_str = f"({symbols_q_format})"
             exchanges_str = "`" + "`".join(exchanges)
             sides_str = "`" + "`".join(sides)
-            amounts_str = " ".join(str(a) for a in amounts)
-            prices_str = " ".join(str(p) for p in prices)
+            amounts_str_q = " ".join(str(a) for a in amounts)
+            amounts_str = f"`float$({amounts_str_q})"
+            prices_str_q = " ".join(str(p) for p in prices)
+            prices_str = f"`float$({prices_str_q})"
             # Construct the full Q update string
             batch_str = f"({timestamps_str}; {symbols_str}; {timestamps_exchange_str}; {exchanges_str}; {sides_str}; {amounts_str}; {prices_str})"
             await self.conn(f".u.upd[`trade; {batch_str}]")
@@ -173,19 +175,32 @@ class DataHandler:
             symbols_q_format = ";".join(f"`$\"{s}\"" for s in symbols)
             symbols_str = f"({symbols_q_format})"
             exchanges_str = "`" + "`".join(exchanges)
-            bid_prices_str = " ".join(str(b) for b in bid_prices)
-            bid_sizes_str = " ".join(str(bs) for bs in bid_sizes)
-            ask_prices_str = " ".join(str(ap) for ap in ask_prices)
-            ask_sizes_str = " ".join(str(as_) for as_ in ask_sizes)
-            midprices_str = " ".join(str(mp) for mp in midprices)
-            bid_ask_spreads_str = " ".join(str(sp) for sp in bid_ask_spreads)
-            market_depth_bids_str = " ".join(str(md) for md in market_depth_bids)
-            market_depth_asks_str = " ".join(str(md) for md in market_depth_asks)
-            order_book_imbalances_str = " ".join(str(oi) for oi in order_book_imbalances)
-            vwaps_str = " ".join(str(vw) for vw in vwaps)
-            order_book_ratios_str = " ".join(str(or_) if or_ != 'None' else '0' for or_ in order_book_ratios)
-            bid_slippage_prices_str = " ".join(str(sp) if sp != 'None' else '0' for sp in bid_slippage_prices)
-            ask_slippage_prices_str = " ".join(str(sp) if sp != 'None' else '0' for sp in ask_slippage_prices)
+            bid_prices_str_q = " ".join(str(b) for b in bid_prices)
+            bid_prices_str = f"`float$({bid_prices_str_q})"
+            bid_sizes_str_q = " ".join(str(bs) for bs in bid_sizes)
+            bid_sizes_str = f"`float$({bid_sizes_str_q})"
+            ask_prices_str_q = " ".join(str(ap) for ap in ask_prices)
+            ask_prices_str = f"`float$({ask_prices_str_q})"
+            ask_sizes_str_q = " ".join(str(as_) for as_ in ask_sizes)
+            ask_sizes_str = f"`float$({ask_sizes_str_q})"
+            midprices_str_q = " ".join(str(mp) for mp in midprices)
+            midprices_str = f"`float$({midprices_str_q})"
+            bid_ask_spreads_str_q = " ".join(str(sp) for sp in bid_ask_spreads)
+            bid_ask_spreads_str = f"`float$({bid_ask_spreads_str_q})"
+            market_depth_bids_str_q = " ".join(str(md) for md in market_depth_bids)
+            market_depth_bids_str = f"`float$({market_depth_bids_str_q})"
+            market_depth_asks_str_q = " ".join(str(md) for md in market_depth_asks)
+            market_depth_asks_str = f"`float$({market_depth_asks_str_q})"
+            order_book_imbalances_str_q = " ".join(str(oi) for oi in order_book_imbalances)
+            order_book_imbalances_str = f"`float$({order_book_imbalances_str_q})"
+            vwaps_str_q = " ".join(str(vw) for vw in vwaps)
+            vwaps_str = f"`float$({vwaps_str_q})"
+            order_book_ratios_str_q = " ".join(str(or_) if or_ != 'None' else '0' for or_ in order_book_ratios)
+            order_book_ratios_str = f"`float$({order_book_ratios_str_q})"
+            bid_slippage_prices_str_q = " ".join(str(sp) if sp != 'None' else '0' for sp in bid_slippage_prices)
+            bid_slippage_prices_str = f"`float$({bid_slippage_prices_str_q})"
+            ask_slippage_prices_str_q = " ".join(str(sp) if sp != 'None' else '0' for sp in ask_slippage_prices)
+            ask_slippage_prices_str = f"`float$({ask_slippage_prices_str_q})"
             # Construct the full Q update string
             batch_str = f"({timestamps_str}; {symbols_str}; {timestamps_exchange_str}; {exchanges_str}; {bid_prices_str}; {bid_sizes_str}; {ask_prices_str}; {ask_sizes_str}; {midprices_str}; {bid_ask_spreads_str}; {market_depth_bids_str}; {market_depth_asks_str}; {order_book_imbalances_str}; {vwaps_str}; {order_book_ratios_str}; {bid_slippage_prices_str}; {ask_slippage_prices_str})"
             await self.conn(f".u.upd[`quote; {batch_str}]")
