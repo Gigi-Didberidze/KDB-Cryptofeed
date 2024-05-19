@@ -16,14 +16,5 @@ quote:([]
 	bestBid: `float$();
 	bestBidSize: `float$();
 	bestAsk: `float$();
-	bestAskSize: `float$();
-	midprice: `float$();
-	bidAskSpread: `float$();
-	marketDepthBids: `float$();
-	marketDepthAsks: `float$();
-	orderBookImbalance: `float$();
-	vwap: `float$();
-	orderBookRatio: `float$();
-	bidSlippagePrice: `float$();
-	askSlippagePrice: `float$()
+	bestAskSize: `float$()
 	)

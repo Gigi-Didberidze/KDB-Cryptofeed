@@ -13,12 +13,11 @@ import logging
 
 
 class DataHandler:
-    def __init__(self, host='localhost', port=5000, batch_size=2, order_size=Decimal('1.0')):
+    def __init__(self, host='localhost', port=5000, batch_size=2):
         self.conn = None
         self.host = host
         self.port = port
         self.batch_size = batch_size
-        self.order_size = order_size
         self.trades = []
         self.books = []
         self.loop = asyncio.get_event_loop()
@@ -41,8 +40,8 @@ class DataHandler:
             format(t.timestamp),
             t.exchange,
             t.side,
-            format(t.amount, '.9g'),
-            format(t.price, '.9g')
+            format(float(t.amount)),
+            format(float(t.price))
         )
         self.trades.append(trade_tuple)
         
@@ -72,71 +71,12 @@ class DataHandler:
         except Exception as e:
             logging.error(f"Error publishing trades: {e}")
 
-    def calculate_price_with_slippage(self, price_volume_list, order_size):
-        accumulated_volume = Decimal(0)
-        total_cost = Decimal(0)
-        
-        for price, volume in price_volume_list:
-            if accumulated_volume + volume >= order_size:
-                total_cost += (order_size - accumulated_volume) * price
-                break
-            else:
-                accumulated_volume += volume
-                total_cost += volume * price
-        
-        if accumulated_volume == 0:
-            return None  # Prevent division by zero
-
-        return total_cost / order_size
 
     async def handle_book(self, book, receipt_timestamp):
-        bid_list = book.book[BID].to_list()
-        ask_list = book.book[ASK].to_list()
 
-        # Define the range for filtering bids and asks
-        midprice_initial = (bid_list[0][0] + ask_list[0][0]) / 2
-        bid_threshold = Decimal('0.99') * midprice_initial
-        ask_threshold = Decimal('1.01') * midprice_initial
+        best_bid_price, best_bid_volume = book.book.bids.index(0)[0], book.book.bids.index(0)[1]
+        best_ask_price, best_ask_volume = book.book.asks.index(0)[0], book.book.asks.index(0)[1]
 
-        # Filter bids and asks within the specified range around the midprice
-        filtered_bids = [(price, volume) for price, volume in bid_list if price >= bid_threshold]
-        filtered_asks = [(price, volume) for price, volume in ask_list if price <= ask_threshold]
-
-        if not filtered_bids or not filtered_asks:
-            #print(f"Filtered lists are empty, skipping this update.")
-            return
-
-        best_bid_price, best_bid_volume = filtered_bids[0]
-        best_ask_price, best_ask_volume = filtered_asks[0]
-
-        # Calculate the midprice using filtered lists
-        midprice = (best_bid_price + best_ask_price) / 2
-
-        # Calculate the bid-ask spread
-        bid_ask_spread = best_ask_price - best_bid_price
-
-        # Calculate market depth within the specified range around the midprice
-        market_depth_bids = sum(volume for price, volume in filtered_bids)
-        market_depth_asks = sum(volume for price, volume in filtered_asks)
-
-        # Calculate order book imbalance
-        order_book_imbalance = (market_depth_bids - market_depth_asks) / (market_depth_bids + market_depth_asks)
-
-        # Calculate VWAP
-        bid_vwap = sum(price * volume for price, volume in filtered_bids) / sum(volume for price, volume in filtered_bids)
-        ask_vwap = sum(price * volume for price, volume in filtered_asks) / sum(volume for price, volume in filtered_asks)
-        vwap = (bid_vwap + ask_vwap) / 2
-
-        # Calculate order book ratio
-        order_book_ratio = market_depth_bids / market_depth_asks if market_depth_asks != 0 else None
-
-        # Calculate price with slippage for the specified order size
-        bid_slippage_price = self.calculate_price_with_slippage(filtered_bids, self.order_size)
-        ask_slippage_price = self.calculate_price_with_slippage(filtered_asks, self.order_size)
-
-        # Handle edge cases where slippage price might be None
-        bid_slippage_price_str = format(bid_slippage_price, '.9g') if bid_slippage_price else '0.0000'
-        ask_slippage_price_str = format(ask_slippage_price, '.9g') if ask_slippage_price else '0.0000'
 
         # Prepare a book tuple for the batch
         book_tuple = (
@@ -144,19 +84,10 @@ class DataHandler:
             book.symbol,
             format(book.timestamp),
             book.exchange,
-            format(best_bid_price, '.9g'),
-            format(best_bid_volume, '.9g'),
-            format(best_ask_price, '.9g'),
-            format(best_ask_volume, '.9g'),
-            format(midprice, '.9g'),
-            format(bid_ask_spread, '.9g'),
-            format(market_depth_bids, '.9g'),
-            format(market_depth_asks, '.9g'),
-            format(order_book_imbalance, '.4g'),
-            format(vwap, '.9g'),
-            format(order_book_ratio, '.4g') if order_book_ratio is not None else 'None',
-            bid_slippage_price_str,
-            ask_slippage_price_str
+            format(float(book.book.bids.index(0)[0])),
+            format(float(book.book.bids.index(0)[1])),
+            format(float(book.book.asks.index(0)[0])),
+            format(float(book.book.asks.index(0)[1])),
         )
         self.books.append(book_tuple)
         
@@ -167,7 +98,7 @@ class DataHandler:
     async def publish_books(self):
         try:
             # Unpack and prepare the batch data
-            timestamps, symbols, timestamps_exchange, exchanges, bid_prices, bid_sizes, ask_prices, ask_sizes, midprices, bid_ask_spreads, market_depth_bids, market_depth_asks, order_book_imbalances, vwaps, order_book_ratios, bid_slippage_prices, ask_slippage_prices = zip(*self.books)
+            timestamps, symbols, timestamps_exchange, exchanges, bid_prices, bid_sizes, ask_prices, ask_sizes = zip(*self.books)
             # Format lists properly for Q
             timestamps_str = " ".join(str(t) for t in timestamps)
             timestamps_exchange_str = " ".join([str(te) if te != 'None' else t for te, t in zip(timestamps_exchange, timestamps)])
@@ -182,26 +113,9 @@ class DataHandler:
             ask_prices_str = f"`float$({ask_prices_str_q})"
             ask_sizes_str_q = " ".join(str(as_) for as_ in ask_sizes)
             ask_sizes_str = f"`float$({ask_sizes_str_q})"
-            midprices_str_q = " ".join(str(mp) for mp in midprices)
-            midprices_str = f"`float$({midprices_str_q})"
-            bid_ask_spreads_str_q = " ".join(str(sp) for sp in bid_ask_spreads)
-            bid_ask_spreads_str = f"`float$({bid_ask_spreads_str_q})"
-            market_depth_bids_str_q = " ".join(str(md) for md in market_depth_bids)
-            market_depth_bids_str = f"`float$({market_depth_bids_str_q})"
-            market_depth_asks_str_q = " ".join(str(md) for md in market_depth_asks)
-            market_depth_asks_str = f"`float$({market_depth_asks_str_q})"
-            order_book_imbalances_str_q = " ".join(str(oi) for oi in order_book_imbalances)
-            order_book_imbalances_str = f"`float$({order_book_imbalances_str_q})"
-            vwaps_str_q = " ".join(str(vw) for vw in vwaps)
-            vwaps_str = f"`float$({vwaps_str_q})"
-            order_book_ratios_str_q = " ".join(str(or_) if or_ != 'None' else '0' for or_ in order_book_ratios)
-            order_book_ratios_str = f"`float$({order_book_ratios_str_q})"
-            bid_slippage_prices_str_q = " ".join(str(sp) if sp != 'None' else '0' for sp in bid_slippage_prices)
-            bid_slippage_prices_str = f"`float$({bid_slippage_prices_str_q})"
-            ask_slippage_prices_str_q = " ".join(str(sp) if sp != 'None' else '0' for sp in ask_slippage_prices)
-            ask_slippage_prices_str = f"`float$({ask_slippage_prices_str_q})"
+           
             # Construct the full Q update string
-            batch_str = f"({timestamps_str}; {symbols_str}; {timestamps_exchange_str}; {exchanges_str}; {bid_prices_str}; {bid_sizes_str}; {ask_prices_str}; {ask_sizes_str}; {midprices_str}; {bid_ask_spreads_str}; {market_depth_bids_str}; {market_depth_asks_str}; {order_book_imbalances_str}; {vwaps_str}; {order_book_ratios_str}; {bid_slippage_prices_str}; {ask_slippage_prices_str})"
+            batch_str = f"({timestamps_str}; {symbols_str}; {timestamps_exchange_str}; {exchanges_str}; {bid_prices_str}; {bid_sizes_str}; {ask_prices_str}; {ask_sizes_str})"
             await self.conn(f".u.upd[`quote; {batch_str}]")
             self.books = []  # Clear the list after sending
         except Exception as e:
